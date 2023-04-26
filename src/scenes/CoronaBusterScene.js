@@ -10,6 +10,8 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.nav_left = undefined;
     this.nav_right = undefined;
     this.shoot = undefined;
+    this.player = undefined
+    this.speed = 100;
   }
 
   preload(){
@@ -18,6 +20,12 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.load.image('left-btn', 'images/left-btn.png')
     this.load.image('right-btn', 'images/right-btn.png')
     this.load.image('shoot-btn', 'images/shoot-btn.png')
+
+    // load player spritesheet
+    this.load.spritesheet('player', 'images/ship.png', {
+      frameWidth: 66,
+      frameHeight: 66
+    });
   }
 
   create(){
@@ -33,6 +41,8 @@ export default class CoronaBusterScene extends Phaser.Scene {
     Phaser.Actions.RandomRectangle(this.clouds.getChildren(), this.physics.world.bounds); // place clouds randomly
 
     this.createButtons();
+
+    this.player = this.createPlayer();
   }
 
   update(time){
@@ -45,6 +55,8 @@ export default class CoronaBusterScene extends Phaser.Scene {
         child.y = 0;
       }
     })
+
+    this.movePlayer(this.player, time);
   }
 
   createButtons(){
@@ -56,6 +68,7 @@ export default class CoronaBusterScene extends Phaser.Scene {
 
     nav_left.on('pointerdown', () => {
       this.nav_left = true;
+      console.log('left')
     })
 
     nav_left.on('pointerout', () => {
@@ -78,4 +91,43 @@ export default class CoronaBusterScene extends Phaser.Scene {
       this.shoot = false;
     })
   } 
+
+  createPlayer(){
+    const player = this.physics.add.sprite(200, 450, 'player');
+    player.setCollideWorldBounds(true);
+
+    this.anims.create({ // create animation
+      key: 'turn', 
+      frames: [
+        { key: 'player', frame: 0 } 
+      ],
+    })
+
+    this.anims.create({
+      key: 'left',
+      frames: this.anims.generateFrameNumbers('player', { start: 1, end: 2 }),
+    })
+
+    this.anims.create({
+      key: 'right',
+      frames: this.anims.generateFrameNumbers('player', { start: 1, end: 2 }),
+    })
+
+    return player;
+  }
+
+  movePlayer(player, time){
+    if (this.nav_left){
+      this.player.setVelocityX(this.speed * -1);
+      this.player.anims.play('left', true);
+      this.player.setFlipX(false); 
+    } else if (this.nav_right){
+      this.player.setVelocityX(this.speed);
+      this.player.anims.play('right', true);
+      this.player.setFlipX(true);
+    } else {
+      this.player.setVelocityX(0);
+      this.player.anims.play('turn');
+    }
+  }
 }
