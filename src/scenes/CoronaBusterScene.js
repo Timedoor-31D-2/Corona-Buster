@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import FallingObject from "../ui/FallingObject";
 
 export default class CoronaBusterScene extends Phaser.Scene {
   constructor(){
@@ -12,6 +13,8 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.shoot = undefined;
     this.player = undefined
     this.speed = 100;
+    this.enemies = undefined;
+    this.enemySpeed = 50;
   }
 
   preload(){
@@ -20,6 +23,7 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.load.image('left-btn', 'images/left-btn.png')
     this.load.image('right-btn', 'images/right-btn.png')
     this.load.image('shoot-btn', 'images/shoot-btn.png')
+    this.load.image('enemy', 'images/enemy.png')
 
     // load player spritesheet
     this.load.spritesheet('player', 'images/ship.png', {
@@ -43,6 +47,19 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.createButtons();
 
     this.player = this.createPlayer();
+
+    this.enemies = this.physics.add.group({
+      classType: FallingObject,
+      maxSize: 10,
+      runChildUpdate: true
+    })
+
+    this.time.addEvent({
+      delay: Phaser.Math.Between(1000, 5000),
+      callback: this.spawnEnemy,
+      callbackScope: this,
+      loop: true
+    })
   }
 
   update(time){
@@ -128,6 +145,20 @@ export default class CoronaBusterScene extends Phaser.Scene {
     } else {
       this.player.setVelocityX(0);
       this.player.anims.play('turn');
+    }
+  }
+
+  spawnEnemy(){
+    const config = {
+      speed: 30,
+      rotation: 0.1
+    }
+    // @ts-ignore
+    const enemy = this.enemies.get(0, 0, 'enemy', config);
+    const positionX = Phaser.Math.Between(50, 350);
+
+    if (enemy) {
+      enemy.spawn(positionX);
     }
   }
 }
