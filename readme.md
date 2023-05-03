@@ -11,6 +11,7 @@ This will create a folder named `Corona-Buster` .
 Go into your new project folder and install dependencies:
 
 ```bash
+npm install -g parcel-bundler
 npm install
 ```
 
