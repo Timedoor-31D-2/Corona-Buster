@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import FallingObject from "../ui/FallingObject";
+import Laser from "../ui/Laser";
 
 export default class CoronaBusterScene extends Phaser.Scene {
   constructor(){
@@ -15,6 +16,8 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.speed = 100;
     this.enemies = undefined;
     this.enemySpeed = 50;
+    this.lasers = undefined;
+    this.lastFired = 10;
   }
 
   preload(){
@@ -29,6 +32,11 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.load.spritesheet('player', 'images/ship.png', {
       frameWidth: 66,
       frameHeight: 66
+    });
+
+    this.load.spritesheet('laser', 'images/laser-bolts.png', {
+      frameWidth: 16,
+      frameHeight: 16
     });
   }
 
@@ -51,7 +59,7 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.enemies = this.physics.add.group({
       classType: FallingObject,
       maxSize: 10,
-      runChildUpdate: true
+      runChildUpdate: true // update all children of this group
     })
 
     this.time.addEvent({
@@ -60,11 +68,22 @@ export default class CoronaBusterScene extends Phaser.Scene {
       callbackScope: this,
       loop: true
     })
+
+    this.lasers = this.physics.add.group({
+      classType: Laser,
+      maxSize: 10,
+      runChildUpdate: true
+    })
+
+    // overlap between lasers and enemies
+    this.physics.add.overlap(this.lasers, this.enemies, this.hitEnemy, null, this);
+
   }
 
   update(time){
     this.clouds.children.iterate((child) => {
       // set cloud speed
+      // @ts-ignore
       child.setVelocityY(20);
 
       if (child.y > this.scale.height) {
@@ -146,6 +165,14 @@ export default class CoronaBusterScene extends Phaser.Scene {
       this.player.setVelocityX(0);
       this.player.anims.play('turn');
     }
+
+    if ((this.shoot) && time > this.lastFired){ // shoot laser every 150ms
+      const laser = this.lasers.get(0, 0, 'laser'); // get laser from pool
+      if (laser) {
+        laser.fire(this.player.x, this.player.y);
+        this.lastFired = time + 150;
+      }
+    }
   }
 
   spawnEnemy(){
@@ -160,5 +187,10 @@ export default class CoronaBusterScene extends Phaser.Scene {
     if (enemy) {
       enemy.spawn(positionX);
     }
+  }
+
+  hitEnemy(laser, enemy){
+    laser.die();
+    enemy.die();
   }
 }
