@@ -22,6 +22,8 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.score = 0;
     this.lifeLabel = undefined;
     this.life = 3;
+    this.handsanitizer = undefined;
+    this.backsound = undefined;
   }
 
   preload(){
@@ -31,6 +33,7 @@ export default class CoronaBusterScene extends Phaser.Scene {
     this.load.image('right-btn', 'images/right-btn.png')
     this.load.image('shoot-btn', 'images/shoot-btn.png')
     this.load.image('enemy', 'images/enemy.png')
+    this.load.image('handsanitizer', 'images/handsanitizer.png')
 
     // load player spritesheet
     this.load.spritesheet('player', 'images/ship.png', {
@@ -42,6 +45,13 @@ export default class CoronaBusterScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
+
+    // load sound effects
+    this.load.audio('bgsound', 'sfx/AloneAgainst Enemy.ogg');
+    this.load.audio('laser', 'sfx/sfx_laser.ogg');
+    this.load.audio('destroy', 'sfx/destroy.mp3')
+    this.load.audio('life', 'sfx/handsanitizer.mp3')
+    this.load.audio('gameover', 'sfx/gameover.wav')
   }
 
   create(){
@@ -96,6 +106,30 @@ export default class CoronaBusterScene extends Phaser.Scene {
     
     // overlap between player and enemies
     this.physics.add.overlap(this.player, this.enemies, this.decreaseLife, null, this);
+
+    this.handsanitizer = this.physics.add.group({
+      classType: FallingObject,
+      runChildUpdate: true
+    })
+
+    this.time.addEvent({
+      delay: 10000,
+      callback: this.spawnHandsanitizer,
+      callbackScope: this,
+      loop: true
+    })
+
+    // overlap between player and handsanitizer
+    this.physics.add.overlap(this.player, this.handsanitizer, this.increaseLife, null, this);
+
+    this.backsound = this.sound.add('bgsound');
+
+    var soundConfig = {
+      loop: true,
+      volume: 0.25
+    }
+
+    this.backsound.play(soundConfig);
   }
 
   update(time){
@@ -192,6 +226,7 @@ export default class CoronaBusterScene extends Phaser.Scene {
       if (laser) {
         laser.fire(this.player.x, this.player.y);
         this.lastFired = time + 150;
+        this.sound.play('laser');
       }
     }
   }
@@ -214,6 +249,7 @@ export default class CoronaBusterScene extends Phaser.Scene {
     laser.die();
     enemy.die();
     this.score += 10;
+    this.sound.play('destroy');
   }
 
   decreaseLife(player, enemy){
@@ -225,7 +261,35 @@ export default class CoronaBusterScene extends Phaser.Scene {
     } else if ( this.life == 1){
       player.setTint(0xff0000).setAlpha(0.2);
     } else if ( this.life == 0){
+      this.sound.stopAll();
+      this.sound.play('gameover');
       this.scene.start('over-scene', {score: this.score});
+    }
+  }
+
+  spawnHandsanitizer(){
+    const config = {
+      speed: 60,
+      rotation: 0
+    }
+    // @ts-ignore
+    const handsanitizer = this.handsanitizer.get(0, 0, 'handsanitizer', config);
+    const positionX = Phaser.Math.Between(70, 330);
+
+    if (handsanitizer) {
+      handsanitizer.spawn(positionX);
+    }
+  }
+
+  increaseLife(player, enemy){
+    enemy.die();
+    this.life += 1;
+    this.sound.play('life');
+
+    if( this.life >= 3){
+      player.clearTint().setAlpha(1);
+    } else if( this.life >= 2){
+      player.setTint(0xff0000).setAlpha(0.2);
     }
   }
 }
